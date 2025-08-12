@@ -85,7 +85,7 @@
 
     <!-- Настройки Telegram -->
     <div class="row">
-        <div class="col-12">
+        <div class="12">
             <div class="card shadow mb-4">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
@@ -117,6 +117,169 @@
                             </button>
                             <button type="button" class="btn btn-outline-info" onclick="testTelegramConnection()">
                                 <i class="bi bi-connection me-2"></i>Тест подключения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Настройки LDAP/Active Directory -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-server me-2"></i>
+                        Настройки LDAP/Active Directory
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="ldapSettingsForm">
+                        <!-- Основные настройки -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ldapEnabled" name="ldap_enabled">
+                                    <label class="form-check-label" for="ldapEnabled">
+                                        <strong>Включить интеграцию с LDAP/Active Directory</strong>
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Позволяет пользователям входить в систему используя корпоративные учетные записи
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapServerUrl" class="form-label">Сервер LDAP</label>
+                                    <input type="text" class="form-control" id="ldapServerUrl" name="ldap_server_url" 
+                                           placeholder="ldap.company.local или 192.168.1.100">
+                                    <small class="form-text text-muted">URL или IP адрес LDAP сервера</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="ldapPort" class="form-label">Порт</label>
+                                    <input type="number" class="form-control" id="ldapPort" name="ldap_port" 
+                                           value="389" min="1" max="65535">
+                                    <small class="form-text text-muted">389 для LDAP, 636 для LDAPS</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="ldapUseSsl" name="ldap_use_ssl">
+                                        <label class="form-check-label" for="ldapUseSsl">
+                                            Использовать SSL/TLS
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapBindDn" class="form-label">DN пользователя для подключения</label>
+                                    <input type="text" class="form-control" id="ldapBindDn" name="ldap_bind_dn" 
+                                           placeholder="CN=ServiceUser,OU=ServiceAccounts,DC=company,DC=local">
+                                    <small class="form-text text-muted">Учетная запись с правами на поиск пользователей</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapBindPassword" class="form-label">Пароль</label>
+                                    <input type="password" class="form-control" id="ldapBindPassword" name="ldap_bind_password">
+                                    <small class="form-text text-muted">Пароль для учетной записи подключения</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapAuthMethod" class="form-label">Метод аутентификации</label>
+                                    <select class="form-select" id="ldapAuthMethod" name="ldap_auth_method">
+                                        <option value="SIMPLE">SIMPLE (обычный)</option>
+                                        <option value="NTLM">NTLM (Windows)</option>
+                                        <option value="ANONYMOUS">ANONYMOUS (анонимный)</option>
+                                    </select>
+                                    <small class="form-text text-muted">Рекомендуется SIMPLE для большинства случаев</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapUserSearchBase" class="form-label">База поиска пользователей</label>
+                                    <input type="text" class="form-control" id="ldapUserSearchBase" name="ldap_user_search_base" 
+                                           placeholder="OU=Users,DC=company,DC=local">
+                                    <small class="form-text text-muted">Контейнер, где находятся учетные записи пользователей</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapUserSearchFilter" class="form-label">Фильтр поиска пользователей</label>
+                                    <input type="text" class="form-control" id="ldapUserSearchFilter" name="ldap_user_search_filter" 
+                                           value="(sAMAccountName={username})" placeholder="(sAMAccountName={username})">
+                                    <small class="form-text text-muted">Фильтр LDAP для поиска пользователей. {username} заменяется на имя пользователя</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ldapDefaultRole" class="form-label">Роль по умолчанию</label>
+                                    <select class="form-select" id="ldapDefaultRole" name="ldap_default_role">
+                                        <option value="user">Пользователь</option>
+                                        <option value="it_staff">IT Сотрудник</option>
+                                        <option value="admin">Администратор</option>
+                                    </select>
+                                    <small class="form-text text-muted">Роль для новых пользователей, созданных из LDAP</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ldapAutoCreateUsers" name="ldap_auto_create_users">
+                                    <label class="form-check-label" for="ldapAutoCreateUsers">
+                                        Автоматически создавать пользователей
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Создавать учетные записи в системе при первом входе через LDAP
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ldapSyncGroups" name="ldap_sync_groups">
+                                    <label class="form-check-label" for="ldapSyncGroups">
+                                        Синхронизировать группы
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Синхронизировать членство в группах из LDAP (в разработке)
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-save me-2"></i>Сохранить настройки LDAP
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="testLdapConnection()">
+                                <i class="bi bi-connection me-2"></i>Тест подключения
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="getLdapServerInfo()">
+                                <i class="bi bi-info-circle me-2"></i>Информация о сервере
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="searchLdapUsers()">
+                                <i class="bi bi-search me-2"></i>Поиск пользователей
                             </button>
                         </div>
                     </form>
@@ -504,6 +667,202 @@ function testTelegramConnection() {
             console.error('Error:', error);
             alert('Произошла ошибка при тестировании подключения');
         });
+}
+
+// LDAP функции
+function loadLdapSettings() {
+    fetch('/api/settings/ldap')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const settings = data.settings;
+                
+                // Заполняем форму
+                document.getElementById('ldapEnabled').checked = settings.ldap_enabled === 'true';
+                document.getElementById('ldapServerUrl').value = settings.ldap_server_url || '';
+                document.getElementById('ldapPort').value = settings.ldap_port || '389';
+                document.getElementById('ldapUseSsl').checked = settings.ldap_use_ssl === 'true';
+                document.getElementById('ldapBindDn').value = settings.ldap_bind_dn || '';
+                document.getElementById('ldapBindPassword').value = settings.ldap_bind_password || '';
+                document.getElementById('ldapAuthMethod').value = settings.ldap_auth_method || 'SIMPLE';
+                document.getElementById('ldapUserSearchBase').value = settings.ldap_user_search_base || '';
+                document.getElementById('ldapUserSearchFilter').value = settings.ldap_user_search_filter || '(sAMAccountName={username})';
+                document.getElementById('ldapAutoCreateUsers').checked = settings.ldap_auto_create_users === 'true';
+                document.getElementById('ldapDefaultRole').value = settings.ldap_default_role || 'user';
+                document.getElementById('ldapSyncGroups').checked = settings.ldap_sync_groups === 'true';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки настроек LDAP:', error);
+            showAlert('Ошибка загрузки настроек LDAP', 'danger');
+        });
+}
+
+function saveLdapSettings() {
+    const formData = {
+        ldap_enabled: document.getElementById('ldapEnabled').checked,
+        ldap_server_url: document.getElementById('ldapServerUrl').value,
+        ldap_port: document.getElementById('ldapPort').value,
+        ldap_use_ssl: document.getElementById('ldapUseSsl').checked,
+        ldap_bind_dn: document.getElementById('ldapBindDn').value,
+        ldap_bind_password: document.getElementById('ldapBindPassword').value,
+        ldap_auth_method: document.getElementById('ldapAuthMethod').value,
+        ldap_user_search_base: document.getElementById('ldapUserSearchBase').value,
+        ldap_user_search_filter: document.getElementById('ldapUserSearchFilter').value,
+        ldap_auto_create_users: document.getElementById('ldapAutoCreateUsers').checked,
+        ldap_default_role: document.getElementById('ldapDefaultRole').value,
+        ldap_sync_groups: document.getElementById('ldapSyncGroups').checked
+    };
+
+    fetch('/api/settings/ldap', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Настройки LDAP успешно сохранены', 'success');
+        } else {
+            showAlert('Ошибка сохранения настроек LDAP: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка сохранения настроек LDAP:', error);
+        showAlert('Ошибка сохранения настроек LDAP', 'danger');
+    });
+}
+
+function testLdapConnection() {
+    const formData = {
+        ldap_server_url: document.getElementById('ldapServerUrl').value,
+        ldap_port: document.getElementById('ldapPort').value,
+        ldap_use_ssl: document.getElementById('ldapUseSsl').checked,
+        ldap_bind_dn: document.getElementById('ldapBindDn').value,
+        ldap_bind_password: document.getElementById('ldapBindPassword').value,
+        ldap_auth_method: document.getElementById('ldapAuthMethod').value
+    };
+
+    // Валидация
+    if (!formData.ldap_server_url || !formData.ldap_bind_dn || !formData.ldap_bind_password) {
+        showAlert('Заполните все обязательные поля для тестирования', 'warning');
+        return;
+    }
+
+    showAlert('Тестирование подключения к LDAP серверу...', 'info');
+
+    fetch('/api/settings/ldap/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ ' + data.message, 'success');
+            if (data.server_info) {
+                console.log('Информация о сервере:', data.server_info);
+            }
+        } else {
+            showAlert('❌ ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка тестирования LDAP:', error);
+        showAlert('Ошибка тестирования подключения к LDAP', 'danger');
+    });
+}
+
+function getLdapServerInfo() {
+    const formData = {
+        ldap_server_url: document.getElementById('ldapServerUrl').value,
+        ldap_port: document.getElementById('ldapPort').value,
+        ldap_use_ssl: document.getElementById('ldapUseSsl').checked
+    };
+
+    if (!formData.ldap_server_url) {
+        showAlert('Укажите адрес LDAP сервера', 'warning');
+        return;
+    }
+
+    showAlert('Получение информации о LDAP сервере...', 'info');
+
+    fetch('/api/settings/ldap/server-info', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const info = data.server_info;
+            let infoText = 'Информация о LDAP сервере:\n';
+            infoText += `Производитель: ${info.vendor_name || 'Неизвестно'}\n`;
+            infoText += `Версия: ${info.vendor_version || 'Неизвестно'}\n`;
+            infoText += `Контексты именования: ${info.naming_contexts ? info.naming_contexts.length : 0}\n`;
+            infoText += `Поддерживаемые механизмы SASL: ${info.supported_sasl_mechanisms ? info.supported_sasl_mechanisms.length : 0}`;
+            
+            showAlert('✅ Информация о сервере получена. Смотрите консоль для деталей.', 'success');
+            console.log('Информация о LDAP сервере:', info);
+            alert(infoText);
+        } else {
+            showAlert('❌ ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка получения информации о сервере:', error);
+        showAlert('Ошибка получения информации о LDAP сервере', 'danger');
+    });
+}
+
+function searchLdapUsers() {
+    const searchTerm = prompt('Введите поисковый запрос (имя, email или username):');
+    if (!searchTerm) return;
+
+    const formData = {
+        search_term: searchTerm
+    };
+
+    showAlert('Поиск пользователей в LDAP...', 'info');
+
+    fetch('/api/settings/ldap/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const users = data.users;
+            let resultText = `Найдено пользователей: ${users.length}\n\n`;
+            
+            users.forEach((user, index) => {
+                resultText += `${index + 1}. ${user.cn || 'Не указано'}\n`;
+                resultText += `   Username: ${user.username || 'Не указано'}\n`;
+                resultText += `   Email: ${user.email || 'Не указано'}\n`;
+                resultText += `   Отдел: ${user.department || 'Не указано'}\n`;
+                resultText += `   Должность: ${user.title || 'Не указано'}\n\n`;
+            });
+            
+            showAlert(`✅ ${data.message}`, 'success');
+            console.log('Результаты поиска LDAP:', users);
+            alert(resultText);
+        } else {
+            showAlert('❌ ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка поиска пользователей LDAP:', error);
+        showAlert('Ошибка поиска пользователей в LDAP', 'danger');
+    });
 }
 
 // Проверяем, что функции определены

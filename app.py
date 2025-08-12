@@ -283,9 +283,13 @@ def create_app(config_name='default'):
         """Страница настроек системы"""
         users = auth_service.get_all_users()
         telegram_settings = settings_service.get_telegram_settings()
+        ldap_settings = settings_service.get_ldap_settings()
         
         # Отключаем кэширование для этой страницы
-        response = make_response(render_template('admin_settings.html', users=users, telegram_settings=telegram_settings))
+        response = make_response(render_template('admin_settings.html', 
+                                              users=users, 
+                                              telegram_settings=telegram_settings,
+                                              ldap_settings=ldap_settings))
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
@@ -514,6 +518,165 @@ def create_app(config_name='default'):
                 'bot_info': bot_info,
                 'chat_info': chat_info
             })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+    
+    # LDAP API endpoints
+    @app.route('/api/settings/ldap', methods=['GET'])
+    @admin_required
+    def get_ldap_settings():
+        """API для получения настроек LDAP"""
+        try:
+            ldap_settings = settings_service.get_ldap_settings()
+            return jsonify({
+                'success': True,
+                'settings': ldap_settings
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+    
+    @app.route('/api/settings/ldap', methods=['POST'])
+    @admin_required
+    def save_ldap_settings():
+        """API для сохранения настроек LDAP"""
+        try:
+            data = request.get_json()
+            
+            # Валидация данных
+            required_fields = ['ldap_enabled', 'ldap_server_url', 'ldap_port', 'ldap_use_ssl',
+                             'ldap_bind_dn', 'ldap_bind_password', 'ldap_auth_method',
+                             'ldap_user_search_base', 'ldap_user_search_filter',
+                             'ldap_auto_create_users', 'ldap_default_role', 'ldap_sync_groups']
+            
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({
+                        'success': False,
+                        'message': f'Отсутствует обязательное поле: {field}'
+                    }), 400
+            
+            # Сохранение настроек
+            settings_service.save_ldap_settings(
+                ldap_enabled=data['ldap_enabled'],
+                ldap_server_url=data['ldap_server_url'],
+                ldap_port=int(data['ldap_port']),
+                ldap_use_ssl=data['ldap_use_ssl'],
+                ldap_bind_dn=data['ldap_bind_dn'],
+                ldap_bind_password=data['ldap_bind_password'],
+                ldap_auth_method=data['ldap_auth_method'],
+                ldap_user_search_base=data['ldap_user_search_base'],
+                ldap_user_search_filter=data['ldap_user_search_filter'],
+                ldap_auto_create_users=data['ldap_auto_create_users'],
+                ldap_default_role=data['ldap_default_role'],
+                ldap_sync_groups=data['ldap_sync_groups'],
+                user_id=session.get('user_id')
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'Настройки LDAP успешно сохранены'
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+    
+    @app.route('/api/settings/ldap/test', methods=['POST'])
+    @admin_required
+    def test_ldap_connection():
+        """API для тестирования подключения к LDAP"""
+        try:
+            data = request.get_json()
+            
+            # Импортируем LDAPService здесь для избежания циклических импортов
+            from services.ldap_service import LDAPService
+            ldap_service = LDAPService()
+            
+            # Тестирование подключения
+            result = ldap_service.test_connection(
+                server_url=data['ldap_server_url'],
+                port=int(data['ldap_port']),
+                use_ssl=data['ldap_use_ssl'],
+                bind_dn=data['ldap_bind_dn'],
+                bind_password=data['ldap_bind_password'],
+                auth_method=data['ldap_auth_method']
+            )
+            
+            return jsonify(result)
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+    
+    @app.route('/api/settings/ldap/search', methods=['POST'])
+    @admin_required
+    def search_ldap_users():
+        """API для поиска пользователей в LDAP"""
+        try:
+            data = request.get_json()
+            
+            # Получаем текущие настройки LDAP
+            ldap_settings = settings_service.get_ldap_settings()
+            
+            if ldap_settings['ldap_enabled'] != 'true':
+                return jsonify({
+                    'success': False,
+                    'message': 'LDAP интеграция отключена'
+                }), 400
+            
+            # Импортируем LDAPService здесь для избежания циклических импортов
+            from services.ldap_service import LDAPService
+            ldap_service = LDAPService()
+            
+            # Поиск пользователей
+            result = ldap_service.search_users(
+                search_term=data.get('search_term', ''),
+                server_url=ldap_settings['ldap_server_url'],
+                port=int(ldap_settings['ldap_port']),
+                use_ssl=ldap_settings['ldap_use_ssl'] == 'true',
+                bind_dn=ldap_settings['ldap_bind_dn'],
+                bind_password=ldap_settings['ldap_bind_password'],
+                auth_method=ldap_settings['ldap_auth_method']
+            )
+            
+            return jsonify(result)
+            
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+    
+    @app.route('/api/settings/ldap/server-info', methods=['POST'])
+    @admin_required
+    def get_ldap_server_info():
+        """API для получения информации о LDAP сервере"""
+        try:
+            data = request.get_json()
+            
+            # Импортируем LDAPService здесь для избежания циклических импортов
+            from services.ldap_service import LDAPService
+            ldap_service = LDAPService()
+            
+            # Получение информации о сервере
+            result = ldap_service.get_server_info(
+                server_url=data['ldap_server_url'],
+                port=int(data['ldap_port']),
+                use_ssl=data['ldap_use_ssl']
+            )
+            
+            return jsonify(result)
+            
         except Exception as e:
             return jsonify({
                 'success': False,
