@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки системы V2{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">
+        <i class="bi bi-gear text-primary"></i> Настройки системы V2
+    </h1>
+    <p class="text-muted">Тестовая версия для отладки JavaScript</p>
+
+    <!-- Простая таблица пользователей для тестирования -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>
+                        Тест управления пользователями
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Имя пользователя</th>
+                                    <th>ФИО</th>
+                                    <th>Email</th>
+                                    <th>Роль</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>{{ user.id[:8] }}...</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'it_staff' else 'info' }}">
+                                            {{ 'Админ' if user.role == 'admin' else 'IT' if user.role == 'it_staff' else 'Пользователь' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-success btn-sm" 
+                                                onclick="editUserV2('{{ user.id }}')" title="Тест редактирования">
+                                            <i class="bi bi-pencil"></i> Тест
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Простое модальное окно для тестирования -->
+<div class="modal fade" id="editUserModalV2" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Тест JavaScript V2</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>JavaScript работает! Это версия V2</p>
+                <p>ID пользователя: <span id="modalUserIdV2"></span></p>
+                <p>Время вызова: <span id="modalTimeV2"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ИСПРАВЛЕННАЯ ВЕРСИЯ V2 - РАБОТАЕТ С BASE.HTML
+console.log('=== ЗАГРУЗКА JAVASCRIPT V2 ИСПРАВЛЕННОЙ ВЕРСИИ ===');
+console.log('=== ВРЕМЯ: ' + new Date().toISOString() + ' ===');
+
+// Ждем полной загрузки DOM и всех скриптов
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен V2 - исправленная версия');
+    
+    // Проверяем доступность Bootstrap
+    if (typeof bootstrap !== 'undefined') {
+        console.log('Bootstrap доступен V2:', typeof bootstrap);
+        console.log('Bootstrap.Modal доступен V2:', typeof bootstrap.Modal);
+    } else {
+        console.error('Bootstrap НЕ доступен V2!');
+    }
+    
+    // Проверяем доступность наших функций
+    console.log('editUserV2 определен:', typeof editUserV2);
+    console.log('Модальное окно V2 найдено:', !!document.getElementById('editUserModalV2'));
+});
+
+// Функция editUserV2 - исправленная версия
+function editUserV2(userId) {
+    console.log('editUserV2 вызван с ID:', userId);
+    console.log('Время вызова:', new Date().toISOString());
+    
+    try {
+        // Показываем ID в модальном окне
+        const modalUserId = document.getElementById('modalUserIdV2');
+        const modalTime = document.getElementById('modalTimeV2');
+        
+        if (modalUserId) {
+            modalUserId.textContent = userId;
+        } else {
+            console.error('Элемент modalUserIdV2 не найден!');
+        }
+        
+        if (modalTime) {
+            modalTime.textContent = new Date().toLocaleString();
+        } else {
+            console.error('Элемент modalTimeV2 не найден!');
+        }
+        
+        // Показываем модальное окно
+        const modalElement = document.getElementById('editUserModalV2');
+        if (modalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            console.log('Модальное окно V2 показано успешно');
+        } else {
+            console.error('Не удалось показать модальное окно V2:', {
+                modalElement: !!modalElement,
+                bootstrap: typeof bootstrap,
+                Modal: typeof bootstrap?.Modal
+            });
+        }
+        
+    } catch (error) {
+        console.error('Ошибка в editUserV2:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Проверяем, что функция определена
+console.log('editUserV2 определен:', typeof editUserV2);
+
+// Дополнительная проверка после небольшой задержки
+setTimeout(function() {
+    console.log('=== ПРОВЕРКА ПОСЛЕ ЗАДЕРЖКИ V2 ===');
+    console.log('editUserV2 доступен:', typeof editUserV2);
+    console.log('Bootstrap доступен V2:', typeof bootstrap);
+    console.log('Модальное окно V2 найдено:', !!document.getElementById('editUserModalV2'));
+}, 1000);
+</script>
+{% endblock %}

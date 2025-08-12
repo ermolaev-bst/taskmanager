@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест JavaScript</title>
+</head>
+<body>
+    <h1>Тест JavaScript</h1>
+    <button onclick="testFunction()">Тест</button>
+    
+    <script>
+    console.log('=== ТЕСТ JAVASCRIPT ===');
+    
+    function testFunction() {
+        console.log('Функция работает!');
+        alert('JavaScript работает!');
+    }
+    
+    function editUser(userId) {
+        console.log('editUser вызван с ID:', userId);
+        alert('editUser работает! ID: ' + userId);
+    }
+    
+    console.log('editUser определен:', typeof editUser);
+    console.log('testFunction определен:', typeof testFunction);
+    </script>
+</body>
+</html>

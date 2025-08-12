@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Создать заявку{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Создать новую заявку
+                    </h4>
+                </div>
+                <div class="card-body">
+                                                <form id="createTaskForm" method="POST" action="{{ url_for('create_task') }}" enctype="multipart/form-data">
+                        <div class="row">
+                            <!-- Основная информация -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>Основная информация
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Заголовок заявки *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required 
+                                           placeholder="Краткое описание проблемы">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="task_type" class="form-label">Тип заявки *</label>
+                                    <select class="form-select" id="task_type" name="task_type" required>
+                                        <option value="">Выберите тип</option>
+                                        <option value="Сбой">Сбой</option>
+                                        <option value="Новая разработка">Новая разработка</option>
+                                        <option value="Консультация">Консультация</option>
+                                        <option value="Прочее">Прочее</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Приоритет *</label>
+                                    <select class="form-select" id="priority" name="priority" required>
+                                        <option value="">Выберите приоритет</option>
+                                        <option value="Высокий">Высокий</option>
+                                        <option value="Средний">Средний</option>
+                                        <option value="Низкий">Низкий</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="deadline" class="form-label">Срок выполнения</label>
+                                    <input type="datetime-local" class="form-control" id="deadline" name="deadline">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="estimated_hours" class="form-label">Оценка времени (часы)</label>
+                                    <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" 
+                                           min="0.5" step="0.5" placeholder="2.5">
+                                </div>
+                            </div>
+
+                            <!-- Информация о заявителе -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user me-2"></i>Информация о заявителе
+                                </h6>
+
+                                <div class="mb-3">
+                                    <label for="requester_name" class="form-label">ФИО заявителя *</label>
+                                    <input type="text" class="form-control" id="requester_name" name="requester_name" required 
+                                           value="{{ current_user.name }}" placeholder="Иванов Иван Иванович">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="requester_department" class="form-label">Отдел заявителя *</label>
+                                    <select class="form-select" id="requester_department" name="requester_department" required>
+                                        <option value="">Выберите отдел</option>
+                                        <option value="IT" {{ 'selected' if current_user.department == 'IT' }}>IT</option>
+                                        <option value="Бухгалтерия" {{ 'selected' if current_user.department == 'Бухгалтерия' }}>Бухгалтерия</option>
+                                        <option value="Продажи" {{ 'selected' if current_user.department == 'Продажи' }}>Продажи</option>
+                                        <option value="Маркетинг" {{ 'selected' if current_user.department == 'Маркетинг' }}>Маркетинг</option>
+                                        <option value="HR отдел">HR отдел</option>
+                                        <option value="Производство">Производство</option>
+                                        <option value="Логистика">Логистика</option>
+                                        <option value="Другое">Другое</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="requester_email" class="form-label">Email заявителя</label>
+                                    <input type="email" class="form-control" id="requester_email" name="requester_email" 
+                                           value="{{ current_user.email }}" placeholder="user@company.com">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="requester_phone" class="form-label">Телефон заявителя</label>
+                                    <input type="tel" class="form-control" id="requester_phone" name="requester_phone" 
+                                           placeholder="+7 (999) 123-45-67">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Описание -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-align-left me-2"></i>Описание проблемы
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Подробное описание *</label>
+                                    <textarea class="form-control" id="description" name="description" rows="5" required
+                                              placeholder="Опишите проблему подробно, включая шаги для воспроизведения, ожидаемое и фактическое поведение..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные файлы -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-paperclip me-2"></i>Дополнительные файлы
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="screenshot" class="form-label">Скриншот или файл</label>
+                                    <input type="file" class="form-control" id="screenshot" name="screenshot" 
+                                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+                                    <div class="form-text">Поддерживаемые форматы: изображения, PDF, Word, Excel</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="screenshot_url" class="form-label">Или ссылка на файл</label>
+                                    <input type="url" class="form-control" id="screenshot_url" name="screenshot_url" 
+                                           placeholder="https://drive.google.com/...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                <button type="button" class="btn btn-secondary me-2" onclick="history.back()">
+                                    <i class="fas fa-arrow-left me-2"></i>Назад
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Отправить заявку
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения -->
+<div class="modal fade" id="confirmationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение отправки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите отправить заявку?</p>
+                <div id="taskSummary"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmSubmit">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createTaskForm');
+    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+    
+    // Валидация формы
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (validateForm()) {
+            showConfirmation();
+        }
+    });
+    
+    // Подтверждение отправки
+    document.getElementById('confirmSubmit').addEventListener('click', function() {
+        submitForm();
+    });
+    
+    // Автозаполнение email при вводе имени (только если поле пустое)
+    document.getElementById('requester_name').addEventListener('blur', function() {
+        const email = document.getElementById('requester_email');
+        if (!email.value && this.value && !email.hasAttribute('value')) {
+            // Простая логика для генерации email (можно настроить под компанию)
+            const name = this.value.toLowerCase().replace(/\s+/g, '.');
+            email.value = name + '@company.com';
+        }
+    });
+    
+    // Валидация формы
+    function validateForm() {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        // Валидация email если указан
+        const email = document.getElementById('requester_email');
+        if (email.value && !isValidEmail(email.value)) {
+            email.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Валидация телефона если указан
+        const phone = document.getElementById('requester_phone');
+        if (phone.value && !isValidPhone(phone.value)) {
+            phone.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
+    // Валидация email
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    // Валидация телефона
+    function isValidPhone(phone) {
+        const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+        return phoneRegex.test(phone);
+    }
+    
+    // Показать модальное окно подтверждения
+    function showConfirmation() {
+        const formData = new FormData(form);
+        let summary = '<ul class="list-unstyled">';
+        summary += `<li><strong>Заголовок:</strong> ${formData.get('title')}</li>`;
+        summary += `<li><strong>Тип:</strong> ${formData.get('task_type')}</li>`;
+        summary += `<li><strong>Приоритет:</strong> ${formData.get('priority')}</li>`;
+        summary += `<li><strong>Заявитель:</strong> ${formData.get('requester_name')}</li>`;
+        summary += `<li><strong>Отдел:</strong> ${formData.get('requester_department')}</li>`;
+        if (formData.get('deadline')) {
+            summary += `<li><strong>Срок:</strong> ${new Date(formData.get('deadline')).toLocaleString('ru-RU')}</li>`;
+        }
+        summary += '</ul>';
+        
+        document.getElementById('taskSummary').innerHTML = summary;
+        confirmationModal.show();
+    }
+    
+    // Отправка формы
+    function submitForm() {
+        const formData = new FormData(form);
+        
+        // Показать индикатор загрузки
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Отправка...';
+        submitBtn.disabled = true;
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessMessage(data.message);
+                form.reset();
+                confirmationModal.hide();
+            } else {
+                showErrorMessage(data.message || 'Ошибка при создании заявки');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorMessage('Произошла ошибка при отправке заявки');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+    
+    // Показать сообщение об успехе
+    function showSuccessMessage(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        form.parentNode.insertBefore(alertDiv, form);
+        
+        // Автоматически скрыть через 5 секунд
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    // Показать сообщение об ошибке
+    function showErrorMessage(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        form.parentNode.insertBefore(alertDiv, form);
+        
+        // Автоматически скрыть через 5 секунд
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-people text-primary me-2"></i>
+                    Управление пользователями
+                </h2>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="bi bi-person-plus me-2"></i>
+                    Добавить пользователя
+                </button>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="roleFilter" class="form-label">Фильтр по роли</label>
+                            <select class="form-select" id="roleFilter">
+                                <option value="">Все роли</option>
+                                <option value="admin">Администратор</option>
+                                <option value="it_staff">IT Сотрудник</option>
+                                <option value="user">Пользователь</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="departmentFilter" class="form-label">Фильтр по отделу</label>
+                            <select class="form-select" id="departmentFilter">
+                                <option value="">Все отделы</option>
+                                <option value="IT">IT</option>
+                                <option value="Продажи">Продажи</option>
+                                <option value="Маркетинг">Маркетинг</option>
+                                <option value="Бухгалтерия">Бухгалтерия</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Статус</label>
+                            <select class="form-select" id="statusFilter">
+                                <option value="">Все</option>
+                                <option value="active">Активные</option>
+                                <option value="inactive">Неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary" onclick="applyFilters()">
+                                <i class="bi bi-funnel me-2"></i>
+                                Применить фильтры
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица пользователей -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Имя пользователя</th>
+                                    <th>ФИО</th>
+                                    <th>Email</th>
+                                    <th>Отдел</th>
+                                    <th>Роль</th>
+                                    <th>Telegram</th>
+                                    <th>Статус</th>
+                                    <th>Последний вход</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>{{ user.id[:8] }}...</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.department }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'it_staff' else 'info' }}">
+                                            {{ 'Администратор' if user.role == 'admin' else 'IT Сотрудник' if user.role == 'it_staff' else 'Пользователь' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.telegram_username %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-telegram me-1"></i>
+                                                {{ user.telegram_username }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-telegram me-1"></i>
+                                                Не указан
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if user.is_active else 'secondary' }}">
+                                            {{ 'Активен' if user.is_active else 'Неактивен' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else 'Никогда' }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editUser('{{ user.id }}')" title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="changeRole('{{ user.id }}')" title="Изменить роль">
+                                                <i class="bi bi-person-gear"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-{{ 'success' if user.is_active else 'danger' }}" 
+                                                    onclick="toggleUserStatus('{{ user.id }}')" 
+                                                    title="{{ 'Деактивировать' if user.is_active else 'Активировать' }}">
+                                                <i class="bi bi-{{ 'person-x' if user.is_active else 'person-check' }}"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления пользователя -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newUsername" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="newUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="newEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="newPassword" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newName" class="form-label">ФИО</label>
+                        <input type="text" class="form-control" id="newName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newDepartment" class="form-label">Отдел</label>
+                        <select class="form-select" id="newDepartment" name="department" required>
+                            <option value="">Выберите отдел</option>
+                            <option value="IT">IT</option>
+                            <option value="Продажи">Продажи</option>
+                            <option value="Маркетинг">Маркетинг</option>
+                            <option value="Бухгалтерия">Бухгалтерия</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Роль</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="user">Пользователь</option>
+                            <option value="it_staff">IT Сотрудник</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newTelegramUsername" class="form-label">
+                            <i class="bi bi-telegram me-1"></i>
+                            Telegram Username
+                        </label>
+                        <input type="text" class="form-control" id="newTelegramUsername" name="telegram_username" 
+                               placeholder="@username или username" 
+                               pattern="^@?[a-zA-Z0-9_]{5,32}$"
+                               title="Введите корректный Telegram username (5-32 символа, только буквы, цифры и подчеркивания)">
+                        <div class="form-text">
+                            Укажите username пользователя в Telegram для отправки уведомлений. 
+                            Можно указать с @ или без него.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно изменения роли -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Изменить роль пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changeRoleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="changeRoleUserId">
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Новая роль</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="user">Пользователь</option>
+                            <option value="it_staff">IT Сотрудник</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Изменить роль</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Фильтрация пользователей
+function applyFilters() {
+    const roleFilter = document.getElementById('roleFilter').value;
+    const departmentFilter = document.getElementById('departmentFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const rows = document.querySelectorAll('#usersTableBody tr');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // Фильтр по роли
+        if (roleFilter && row.querySelector('td:nth-child(6)').textContent.trim() !== getRoleText(roleFilter)) {
+            show = false;
+        }
+        
+        // Фильтр по отделу
+        if (departmentFilter && row.querySelector('td:nth-child(5)').textContent.trim() !== departmentFilter) {
+            show = false;
+        }
+        
+        // Фильтр по статусу
+        if (statusFilter) {
+            const isActive = row.querySelector('td:nth-child(7)').textContent.trim() === 'Активен';
+            if ((statusFilter === 'active' && !isActive) || (statusFilter === 'inactive' && isActive)) {
+                show = false;
+            }
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function getRoleText(role) {
+    const roleMap = {
+        'admin': 'Администратор',
+        'it_staff': 'IT Сотрудник',
+        'user': 'Пользователь'
+    };
+    return roleMap[role] || role;
+}
+
+// Добавление пользователя
+document.getElementById('addUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/api/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при добавлении пользователя');
+    });
+});
+
+// Изменение роли
+function changeRole(userId) {
+    document.getElementById('changeRoleUserId').value = userId;
+    const modal = new bootstrap.Modal(document.getElementById('changeRoleModal'));
+    modal.show();
+}
+
+document.getElementById('changeRoleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const userId = document.getElementById('changeRoleUserId').value;
+    const newRole = document.getElementById('newRole').value;
+    
+    fetch(`/api/users/${userId}/role`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при изменении роли');
+    });
+});
+
+// Переключение статуса пользователя
+function toggleUserStatus(userId) {
+    if (confirm('Вы уверены, что хотите изменить статус пользователя?')) {
+        fetch(`/api/users/${userId}/toggle-status`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при изменении статуса');
+        });
+    }
+}
+</script>
+{% endblock %}

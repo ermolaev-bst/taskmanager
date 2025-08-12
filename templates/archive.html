@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Архив задач{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-archive text-primary me-2"></i>
+                    Архив задач
+                </h2>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="filterByStatus('Готово')">
+                        <i class="bi bi-check-circle me-1"></i>Выполненные
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterByStatus('Отменено')">
+                        <i class="bi bi-x-circle me-1"></i>Отмененные
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="showAllTasks()">
+                        <i class="bi bi-list me-1"></i>Все
+                    </button>
+                </div>
+            </div>
+
+            <!-- Статистика архива -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">
+                                <i class="bi bi-check-circle me-2"></i>
+                                {{ tasks|selectattr('status', 'equalto', 'Готово')|list|length }}
+                            </h4>
+                            <p class="card-text">Выполнено</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">
+                                <i class="bi bi-x-circle me-2"></i>
+                                {{ tasks|selectattr('status', 'equalto', 'Отменено')|list|length }}
+                            </h4>
+                            <p class="card-text">Отменено</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">
+                                <i class="bi bi-clock me-2"></i>
+                                {{ tasks|length }}
+                            </h4>
+                            <p class="card-text">Всего в архиве</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center">
+                            <h4 class="card-title">
+                                <i class="bi bi-calendar me-2"></i>
+                                {{ tasks|selectattr('completed_at')|list|length }}
+                            </h4>
+                            <p class="card-text">С датой завершения</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица задач -->
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0">Задачи в архиве</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Поиск по задачам...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="tasksTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>№</th>
+                                    <th>Заголовок</th>
+                                    <th>Тип</th>
+                                    <th>Приоритет</th>
+                                    <th>Заявитель</th>
+                                    <th>Статус</th>
+                                    <th>Дата создания</th>
+                                    <th>Дата завершения</th>
+                                    <th>Исполнитель</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                <tr class="{% if task.status == 'Готово' %}table-success{% elif task.status == 'Отменено' %}table-secondary{% endif %}">
+                                    <td>
+                                        <span class="badge bg-primary">{{ task.task_number }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ task.title }}</strong>
+                                        {% if task.description %}
+                                        <br><small class="text-muted">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ task.task_type }}</span>
+                                    </td>
+                                    <td>
+                                        {% if task.priority == 'Высокий' %}
+                                            <span class="badge bg-danger">Высокий</span>
+                                        {% elif task.priority == 'Средний' %}
+                                            <span class="badge bg-warning text-dark">Средний</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Низкий</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ task.requester_name }}</strong>
+                                            <br><small class="text-muted">{{ task.requester_department }}</small>
+                                            {% if task.requester_email %}
+                                            <br><small class="text-muted">{{ task.requester_email }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if task.status == 'Готово' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Готово
+                                            </span>
+                                        {% elif task.status == 'Отменено' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-x-circle me-1"></i>Отменено
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ task.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {{ task.created_at.strftime('%d.%m.%Y') if task.created_at else 'Не указано' }}
+                                            <br>
+                                            <span class="text-muted">{{ task.created_at.strftime('%H:%M') if task.created_at else '' }}</span>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if task.completed_at %}
+                                            <small>
+                                                {{ task.completed_at.strftime('%d.%m.%Y') }}
+                                                <br>
+                                                <span class="text-muted">{{ task.completed_at.strftime('%H:%M') }}</span>
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">Не указано</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if task.assigned_to_name %}
+                                            <span class="badge bg-primary">{{ task.assigned_to_name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Не назначен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('view_task', task_id=task.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Просмотр">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if task.completion_comment %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-info" 
+                                                    title="Комментарий"
+                                                    onclick="showCompletionComment('{{ task.completion_comment|replace("'", "\\'")|replace('"', '\\"') }}')">
+                                                <i class="bi bi-chat-text"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox display-4"></i>
+                                        <p class="mt-2">Архив пуст</p>
+                                        <small>Выполненные и отмененные задачи появятся здесь</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для комментария завершения -->
+<div class="modal fade" id="completionCommentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-chat-text me-2"></i>
+                    Комментарий к выполнению
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="completionCommentText"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Поиск по задачам
+    const searchInput = document.getElementById('searchInput');
+    const tasksTable = document.getElementById('tasksTable');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = tasksTable.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Фильтрация по статусу
+function filterByStatus(status) {
+    const rows = document.querySelectorAll('#tasksTable tbody tr');
+    
+    rows.forEach(row => {
+        const statusCell = row.querySelector('td:nth-child(6)');
+        if (statusCell && statusCell.textContent.includes(status)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Обновление активной кнопки
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.includes(status)) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// Показать все задачи
+function showAllTasks() {
+    const rows = document.querySelectorAll('#tasksTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    // Сброс активной кнопки
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+}
+
+// Показать комментарий завершения
+function showCompletionComment(comment) {
+    document.getElementById('completionCommentText').innerHTML = `
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            ${comment}
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('completionCommentModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

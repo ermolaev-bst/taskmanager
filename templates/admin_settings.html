@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки системы{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">
+        <i class="bi bi-gear text-primary"></i> Настройки системы
+    </h1>
+    <p class="text-muted">Управление настройками системы и пользователями</p>
+
+    <!-- Управление пользователями -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>
+                        Управление пользователями
+                    </h5>
+                    <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Добавить пользователя
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Имя пользователя</th>
+                                    <th>ФИО</th>
+                                    <th>Email</th>
+                                    <th>Отдел</th>
+                                    <th>Роль</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>{{ user.id[:8] }}...</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.department or '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'it_staff' else 'info' }}">
+                                            {{ 'Админ' if user.role == 'admin' else 'IT' if user.role == 'it_staff' else 'Пользователь' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if user.is_active else 'secondary' }}">
+                                            {{ 'Активен' if user.is_active else 'Неактивен' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editUser('{{ user.id }}')" title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="changeUserRole('{{ user.id }}')" title="Изменить роль">
+                                                <i class="bi bi-person-gear"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-{{ 'success' if user.is_active else 'danger' }}" 
+                                                    onclick="toggleUserStatus('{{ user.id }}')" 
+                                                    title="{{ 'Деактивировать' if user.is_active else 'Активировать' }}">
+                                                <i class="bi bi-{{ 'person-x' if user.is_active else 'person-check' }}"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Настройки Telegram -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-telegram me-2"></i>
+                        Настройки Telegram
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="telegramSettingsForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="botToken" class="form-label">Bot Token</label>
+                                    <input type="text" class="form-control" id="botToken" name="bot_token" 
+                                           value="{{ telegram_settings.bot_token or '' }}" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="chatId" class="form-label">Chat ID</label>
+                                    <input type="text" class="form-control" id="chatId" name="chat_id" 
+                                           value="{{ telegram_settings.chat_id or '' }}" placeholder="-1001234567890">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Сохранить настройки
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="testTelegramConnection()">
+                                <i class="bi bi-connection me-2"></i>Тест подключения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления пользователя -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newUsername" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="newUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="newEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="newPassword" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newName" class="form-label">ФИО</label>
+                        <input type="text" class="form-control" id="newName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newDepartment" class="form-label">Отдел</label>
+                        <select class="form-select" id="newDepartment" name="department" required>
+                            <option value="">Выберите отдел</option>
+                            <option value="IT">IT</option>
+                            <option value="Продажи">Продажи</option>
+                            <option value="Маркетинг">Маркетинг</option>
+                            <option value="Бухгалтерия">Бухгалтерия</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Роль</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="user">Пользователь</option>
+                            <option value="it_staff">IT Сотрудник</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования пользователя -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">ФИО</label>
+                        <input type="text" class="form-control" id="editName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDepartment" class="form-label">Отдел</label>
+                        <select class="form-select" id="editDepartment" name="department" required>
+                            <option value="">Выберите отдел</option>
+                            <option value="IT">IT</option>
+                            <option value="Продажи">Продажи</option>
+                            <option value="Маркетинг">Маркетинг</option>
+                            <option value="Бухгалтерия">Бухгалтерия</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Роль</label>
+                        <select class="form-select" id="editRole" name="role" required>
+                            <option value="user">Пользователь</option>
+                            <option value="it_staff">IT Сотрудник</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTelegramUsername" class="form-label">
+                            <i class="bi bi-telegram me-1"></i>
+                            Telegram Username
+                        </label>
+                        <input type="text" class="form-control" id="editTelegramUsername" name="telegram_username" 
+                               placeholder="@username или username" 
+                               pattern="^@?[a-zA-Z0-9_]{5,32}$"
+                               title="Введите корректный Telegram username (5-32 символа, только буквы, цифры и подчеркивания)">
+                        <div class="form-text">
+                            Укажите username пользователя в Telegram для отправки уведомлений. 
+                            Можно указать с @ или без него.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно изменения роли -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Изменить роль пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changeRoleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="changeRoleUserId">
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Новая роль</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="user">Пользователь</option>
+                            <option value="it_staff">IT Сотрудник</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Изменить роль</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ИСПРАВЛЕННАЯ ВЕРСИЯ - РАБОТАЕТ С BASE.HTML
+console.log('=== ЗАГРУЗКА JAVASCRIPT ОСНОВНОЙ ВЕРСИИ ===');
+console.log('=== ВРЕМЯ: ' + new Date().toISOString() + ' ===');
+
+// Ждем полной загрузки DOM и всех скриптов
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен - основная версия');
+    
+    // Проверяем доступность Bootstrap
+    if (typeof bootstrap !== 'undefined') {
+        console.log('Bootstrap доступен:', typeof bootstrap);
+        console.log('Bootstrap.Modal доступен:', typeof bootstrap.Modal);
+    } else {
+        console.error('Bootstrap НЕ доступен!');
+    }
+    
+    // Проверяем доступность наших функций
+    console.log('editUser определен:', typeof editUser);
+    console.log('Модальное окно найдено:', !!document.getElementById('editUserModal'));
+    
+    // Инициализируем формы
+    initializeForms();
+});
+
+// Инициализация форм
+function initializeForms() {
+    // Форма добавления пользователя
+    document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createUser();
+    });
+    
+    // Форма редактирования пользователя
+    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveUserChanges();
+    });
+    
+    // Форма изменения роли
+    document.getElementById('changeRoleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveRoleChange();
+    });
+    
+    // Форма настроек Telegram
+    document.getElementById('telegramSettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTelegramSettings();
+    });
+}
+
+// Функция редактирования пользователя
+function editUser(userId) {
+    console.log('editUser вызван с ID:', userId);
+    
+    // Загружаем данные пользователя
+    fetch(`/api/users/${userId}`)
+        .then(response => response.json())
+        .then(user => {
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editEmail').value = user.email;
+            document.getElementById('editName').value = user.name;
+            document.getElementById('editDepartment').value = user.department || '';
+            document.getElementById('editRole').value = user.role;
+            document.getElementById('editTelegramUsername').value = user.telegram_username || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки пользователя:', error);
+            alert('Ошибка загрузки данных пользователя');
+        });
+}
+
+// Сохранение изменений пользователя
+function saveUserChanges() {
+    const userId = document.getElementById('editUserId').value;
+    const formData = new FormData(document.getElementById('editUserForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            location.reload();
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при обновлении пользователя');
+    });
+}
+
+// Изменение роли пользователя
+function changeUserRole(userId) {
+    document.getElementById('changeRoleUserId').value = userId;
+    const modal = new bootstrap.Modal(document.getElementById('changeRoleModal'));
+    modal.show();
+}
+
+// Сохранение изменения роли
+function saveRoleChange() {
+    const userId = document.getElementById('changeRoleUserId').value;
+    const newRole = document.getElementById('newRole').value;
+    
+    fetch(`/api/users/${userId}/role`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('changeRoleModal')).hide();
+            location.reload();
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при изменении роли');
+    });
+}
+
+// Переключение статуса пользователя
+function toggleUserStatus(userId) {
+    if (confirm('Вы уверены, что хотите изменить статус пользователя?')) {
+        fetch(`/api/users/${userId}/toggle-status`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при изменении статуса');
+        });
+    }
+}
+
+// Создание пользователя
+function createUser() {
+    const formData = new FormData(document.getElementById('addUserForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/api/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            location.reload();
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при добавлении пользователя');
+    });
+}
+
+// Сохранение настроек Telegram
+function saveTelegramSettings() {
+    const formData = new FormData(document.getElementById('telegramSettingsForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/api/settings/telegram', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('Настройки Telegram успешно сохранены');
+        } else {
+            alert('Ошибка: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при сохранении настроек');
+    });
+}
+
+// Тест подключения к Telegram
+function testTelegramConnection() {
+    fetch('/api/settings/telegram/test')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Подключение к Telegram успешно!');
+            } else {
+                alert('Ошибка подключения: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при тестировании подключения');
+        });
+}
+
+// Проверяем, что функции определены
+console.log('editUser определен:', typeof editUser);
+
+// Дополнительная проверка после небольшой задержки
+setTimeout(function() {
+    console.log('=== ПРОВЕРКА ПОСЛЕ ЗАДЕРЖКИ ===');
+    console.log('editUser доступен:', typeof editUser);
+    console.log('Bootstrap доступен:', typeof bootstrap);
+    console.log('Модальное окно найдено:', !!document.getElementById('editUserModal'));
+}, 1000);
+</script>
+{% endblock %}

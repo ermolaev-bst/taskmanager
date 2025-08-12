@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Задача {{ task.task_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок и навигация -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Рабочий стол</a></li>
+                            <li class="breadcrumb-item active">Задача {{ task.task_number }}</li>
+                        </ol>
+                    </nav>
+                    <h2>
+                        <i class="bi bi-ticket-detailed text-primary me-2"></i>
+                        {{ task.title }}
+                    </h2>
+                </div>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Назад
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="editTask()">
+                        <i class="bi bi-pencil me-1"></i>Редактировать
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Основная информация -->
+                <div class="col-lg-8">
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Основная информация
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Номер задачи:</strong> <span class="badge bg-primary">{{ task.task_number }}</span></p>
+                                    <p><strong>Тип:</strong> <span class="badge bg-info">{{ task.task_type }}</span></p>
+                                    <p><strong>Приоритет:</strong> 
+                                        {% if task.priority == 'Высокий' %}
+                                            <span class="badge bg-danger">Высокий</span>
+                                        {% elif task.priority == 'Средний' %}
+                                            <span class="badge bg-warning text-dark">Средний</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Низкий</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Статус:</strong> 
+                                        {% if task.status == 'Готово' %}
+                                            <span class="badge bg-success">Готово</span>
+                                        {% elif task.status == 'В работе' %}
+                                            <span class="badge bg-primary">В работе</span>
+                                        {% elif task.status == 'Неразобранная' %}
+                                            <span class="badge bg-secondary">Неразобранная</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ task.status }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Создано:</strong> {{ task.created_at.strftime('%d.%m.%Y %H:%M') if task.created_at else 'Не указано' }}</p>
+                                    {% if task.taken_at %}
+                                    <p><strong>Взято в работу:</strong> {{ task.taken_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                    {% endif %}
+                                    {% if task.completed_at %}
+                                    <p><strong>Завершено:</strong> {{ task.completed_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                    {% endif %}
+                                    {% if task.deadline %}
+                                    <p><strong>Срок выполнения:</strong> 
+                                        <span class="{% if task.is_overdue %}text-danger{% endif %}">
+                                            {{ task.deadline.strftime('%d.%m.%Y %H:%M') }}
+                                        </span>
+                                    </p>
+                                    {% endif %}
+                                    {% if task.estimated_hours %}
+                                    <p><strong>Оценка времени:</strong> {{ task.estimated_hours }} ч.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Описание -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-align-left me-2"></i>
+                                Описание
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if task.description %}
+                                <p class="mb-0">{{ task.description }}</p>
+                            {% else %}
+                                <p class="text-muted">Описание не указано</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Комментарий к выполнению -->
+                    {% if task.completion_comment %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-chat-text me-2"></i>
+                                Комментарий к выполнению
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ task.completion_comment }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Боковая панель -->
+                <div class="col-lg-4">
+                    <!-- Информация о заявителе -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person me-2"></i>
+                                Заявитель
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>ФИО:</strong> {{ task.requester_name }}</p>
+                            <p><strong>Отдел:</strong> {{ task.requester_department }}</p>
+                            {% if task.requester_email %}
+                            <p><strong>Email:</strong> <a href="mailto:{{ task.requester_email }}">{{ task.requester_email }}</a></p>
+                            {% endif %}
+                            {% if task.requester_phone %}
+                            <p><strong>Телефон:</strong> <a href="tel:{{ task.requester_phone }}">{{ task.requester_phone }}</a></p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Исполнитель -->
+                    {% if task.assigned_to_name %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person-check me-2"></i>
+                                Исполнитель
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">
+                                <span class="badge bg-primary">{{ task.assigned_to_name }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Файлы -->
+                    {% if task.screenshot_url %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-paperclip me-2"></i>
+                                Прикрепленные файлы
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <a href="{{ task.screenshot_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download me-1"></i>
+                                Скачать файл
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Управление задачей (только для IT сотрудников и администраторов) -->
+                    {% if current_user.can_manage_tasks %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-gear me-2"></i>
+                                Управление задачей
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if task.status == 'Неразобранная' %}
+                                <button type="button" class="btn btn-warning" onclick="updateTaskStatus('{{ task.id }}', 'В работе')">
+                                    <i class="bi bi-play-circle me-2"></i>
+                                    Взять в работу
+                                </button>
+                                {% elif task.status == 'В работе' %}
+                                <button type="button" class="btn btn-success" onclick="updateTaskStatus('{{ task.id }}', 'Готово')">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    Завершить
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="updateTaskStatus('{{ task.id }}', 'В очереди')">
+                                    <i class="bi bi-pause-circle me-2"></i>
+                                    Поставить на паузу
+                                </button>
+                                {% elif task.status == 'В очереди' %}
+                                <button type="button" class="btn btn-warning" onclick="updateTaskStatus('{{ task.id }}', 'В работе')">
+                                    <i class="bi bi-play-circle me-2"></i>
+                                    Возобновить работу
+                                </button>
+                                {% endif %}
+                                
+                                {% if task.status != 'Готово' and task.status != 'Отменено' %}
+                                <button type="button" class="btn btn-danger" onclick="updateTaskStatus('{{ task.id }}', 'Отменено')">
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Отменить
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Статистика -->
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Статистика
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if task.time_to_take %}
+                            <p><strong>Время до взятия в работу:</strong> {{ task.time_to_take }} мин.</p>
+                            {% endif %}
+                            {% if task.time_to_complete %}
+                            <p><strong>Время выполнения:</strong> {{ task.time_to_complete }} ч.</p>
+                            {% endif %}
+                            <p><strong>Обновлено:</strong> {{ task.updated_at.strftime('%d.%m.%Y %H:%M') if task.updated_at else 'Не указано' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ИСПРАВЛЕННАЯ ВЕРСИЯ - РАБОТАЕТ С BASE.HTML
+console.log('=== ЗАГРУЗКА JAVASCRIPT TASK_DETAIL ===');
+console.log('=== ВРЕМЯ: ' + new Date().toISOString() + ' ===');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен - task_detail');
+    console.log('updateTaskStatus определен:', typeof updateTaskStatus);
+});
+
+function editTask() {
+    // Здесь можно добавить логику редактирования
+    alert('Функция редактирования будет добавлена позже');
+}
+
+function updateTaskStatus(taskId, newStatus) {
+    console.log('updateTaskStatus вызван с параметрами:', { taskId, newStatus });
+    
+    if (!confirm(`Вы уверены, что хотите изменить статус задачи на "${newStatus}"?`)) {
+        return;
+    }
+    
+    const data = {
+        status: newStatus,
+        assigned_to_id: '{{ current_user.id }}'
+    };
+    
+    console.log('Отправляем данные:', data);
+    
+    fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Ошибка: ' + result.error);
+        } else {
+            alert(`Статус задачи успешно изменен на "${newStatus}"`);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при обновлении статуса');
+    });
+}
+
+// Проверяем, что функции определены
+console.log('updateTaskStatus определен:', typeof updateTaskStatus);
+
+// Дополнительная проверка после небольшой задержки
+setTimeout(function() {
+    console.log('=== ПРОВЕРКА ПОСЛЕ ЗАДЕРЖКИ ===');
+    console.log('updateTaskStatus доступен:', typeof updateTaskStatus);
+}, 1000);
+</script>
+{% endblock %}

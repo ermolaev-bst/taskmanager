@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика - Менеджер задач{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">
+                <i class="bi bi-graph-up text-success"></i> Аналитика эффективности
+            </h1>
+            <p class="text-muted">Показатели эффективности выполнения IT-заявок за последние 30 дней</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-secondary" onclick="refreshAnalytics()">
+                <i class="bi bi-arrow-clockwise"></i> Обновить
+            </button>
+        </div>
+    </div>
+
+    <!-- Основные показатели -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Выполнено задач</h6>
+                            <h3 class="mb-0">{{ stats.overview.total_completed_tasks }}</h3>
+                            <small>за 30 дней</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Среднее время до взятия</h6>
+                            <h3 class="mb-0">{{ stats.overview.avg_time_to_take_minutes }}</h3>
+                            <small>минут</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-stopwatch fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Среднее время выполнения</h6>
+                            <h3 class="mb-0">{{ stats.overview.avg_time_to_complete_hours }}</h3>
+                            <small>часов</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Тренды по дням
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dailyTrendsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart"></i> Распределение по типам задач
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="taskTypeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по типам задач -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i> Статистика по типам задач
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Тип задачи</th>
+                                    <th>Количество</th>
+                                    <th>Среднее время (ч)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in stats.task_type_statistics %}
+                                <tr>
+                                    <td>
+                                        {% set type_colors = {'Сбой': 'danger', 'Новая разработка': 'primary', 'Консультация': 'info', 'Прочее': 'secondary'} %}
+                                        <span class="badge bg-{{ type_colors.get(stat.task_type, 'secondary') }}">
+                                            {{ stat.task_type }}
+                                        </span>
+                                    </td>
+                                    <td><strong>{{ stat.total }}</strong></td>
+                                    <td>{{ stat.avg_hours }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-flag"></i> Статистика по приоритетам
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Приоритет</th>
+                                    <th>Количество</th>
+                                    <th>Среднее время (ч)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in stats.priority_statistics %}
+                                <tr>
+                                    <td>
+                                        {% set priority_colors = {'Высокий': 'danger', 'Средний': 'warning', 'Низкий': 'success'} %}
+                                        <span class="badge bg-{{ priority_colors.get(stat.priority, 'secondary') }}">
+                                            {{ stat.priority }}
+                                        </span>
+                                    </td>
+                                    <td><strong>{{ stat.total }}</strong></td>
+                                    <td>{{ stat.avg_hours }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по исполнителям -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people"></i> Статистика по исполнителям
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Исполнитель</th>
+                                    <th>Выполнено задач</th>
+                                    <th>Среднее время выполнения (ч)</th>
+                                    <th>Эффективность</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in stats.user_statistics %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-person-circle"></i> {{ stat.user_name }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ stat.total }}</span>
+                                    </td>
+                                    <td>{{ stat.avg_hours }}</td>
+                                    <td>
+                                        {% if stat.avg_hours < 4 %}
+                                            <span class="badge bg-success">Высокая</span>
+                                        {% elif stat.avg_hours < 8 %}
+                                            <span class="badge bg-warning">Средняя</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Низкая</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Детализация по задачам -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i> Детализация выполненных задач
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>№ Задачи</th>
+                                    <th>Название</th>
+                                    <th>Тип</th>
+                                    <th>Приоритет</th>
+                                    <th>Время до взятия (мин)</th>
+                                    <th>Время выполнения (ч)</th>
+                                    <th>Исполнитель</th>
+                                    <th>Дата завершения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in stats.detailed_tasks %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ task.task_number }}</span>
+                                    </td>
+                                    <td>{{ task.title }}</td>
+                                    <td>
+                                        {% set type_colors = {'Сбой': 'danger', 'Новая разработка': 'primary', 'Консультация': 'info', 'Прочее': 'secondary'} %}
+                                        <span class="badge bg-{{ type_colors.get(task.task_type, 'secondary') }}">
+                                            {{ task.task_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% set priority_colors = {'Высокий': 'danger', 'Средний': 'warning', 'Низкий': 'success'} %}
+                                        <span class="badge bg-{{ priority_colors.get(task.priority, 'secondary') }}">
+                                            {{ task.priority }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if task.time_to_take is not none %}
+                                            {{ task.time_to_take }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if task.time_to_complete is not none %}
+                                            {{ task.time_to_complete }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ task.assigned_to_name or 'Не назначен' }}</td>
+                                    <td>
+                                        {% if task.completed_at %}
+                                            {{ task.completed_at[:10] }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script>
+// Данные для графиков
+const dailyTrendsData = {{ stats.daily_trends | tojson }};
+const taskTypeData = {{ stats.task_type_statistics | tojson }};
+
+// График трендов по дням
+const dailyTrendsChart = new Chart(document.getElementById('dailyTrendsChart'), {
+    type: 'line',
+    data: {
+        labels: dailyTrendsData.map(item => item.date),
+        datasets: [{
+            label: 'Создано задач',
+            data: dailyTrendsData.map(item => item.created),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }, {
+            label: 'Завершено задач',
+            data: dailyTrendsData.map(item => item.completed),
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Динамика задач по дням'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// График распределения по типам задач
+const taskTypeChart = new Chart(document.getElementById('taskTypeChart'), {
+    type: 'doughnut',
+    data: {
+        labels: taskTypeData.map(item => item.task_type),
+        datasets: [{
+            data: taskTypeData.map(item => item.total),
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 205, 86, 0.8)',
+                'rgba(201, 203, 207, 0.8)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Распределение по типам задач'
+            },
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function refreshAnalytics() {
+    location.reload();
+}
+</script>
+{% endblock %}
